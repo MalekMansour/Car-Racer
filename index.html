@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #road {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 200vh; 
+            object-fit: cover;
+            object-position: center;
+            animation: scrollBackground 1s linear infinite; /*Scroll Speed*/
+        }
+
+        @keyframes scrollBackground {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
+
+        #car {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .obstacle {
+            position: absolute;
+            display: none;
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            font-size: 36px;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <img id="road" src="road.png" width="1500" height="730"> 
+        <img id="car" src="car.png" width="140" height="190"> 
+        <div id="gameOver">Game Over! Press Space to Play Again</div>
+    </div>
+
+    <script>
+        var car = document.getElementById("car");
+        var carX = window.innerWidth / 2 - car.offsetWidth / 2;
+        var carY = window.innerHeight - car.offsetHeight;
+        var container = document.getElementById("container");
+        var containerWidth = container.offsetWidth;
+        var containerHeight = container.offsetHeight;
+        var obstacles = [];
+        var maxObstacles = 8;
+        var obstacleSpeed = 8; // obstacle speed
+        var obstacleSizeIncrease = 1.8; 
+        var gameOver = false;
+
+        var gameOverScreen = document.getElementById("gameOver");
+
+        function getRandomNumber(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        function createObstacle() {
+            var obstacle = document.createElement("img");
+            obstacle.src = "obstacle.png";
+            obstacle.width = 120; // obstacle width
+            obstacle.height = 180; // obstacle height
+            obstacle.className = "obstacle";
+            obstacle.style.top = "-50px";
+            obstacle.style.left = getRandomNumber(0, containerWidth - obstacle.offsetWidth) + "px";
+            container.appendChild(obstacle);
+            obstacles.push(obstacle);
+        }
+
+        function moveObstacles() {
+            if (gameOver) return;
+
+            for (var i = 0; i < obstacles.length; i++) {
+                var obstacle = obstacles[i];
+                var obstacleY = parseFloat(obstacle.style.top);
+
+                if (obstacleY >= containerHeight) {
+                    obstacle.style.display = "none";
+                } else {
+                    obstacle.style.top = obstacleY + obstacleSpeed + "px";
+                    if (isColliding(car, obstacle)) {
+                        endGame();
+                    }
+                }
+            }
+        }
+
+        function spawnObstacle() {
+            if (gameOver) return;
+
+            var inactiveObstacles = obstacles.filter(function(obstacle) {
+                return obstacle.style.display === "none";
+            });
+
+            if (inactiveObstacles.length > 0) {
+                var randomObstacle = inactiveObstacles[Math.floor(Math.random() * inactiveObstacles.length)];
+                randomObstacle.style.top = "-50px";
+                randomObstacle.style.left = getRandomNumber(0, containerWidth - randomObstacle.offsetWidth) + "px";
+                randomObstacle.style.display = "block";
+            }
+        }
+
+        function isColliding(element1, element2) {
+            var rect1 = element1.getBoundingClientRect();
+            var rect2 = element2.getBoundingClientRect();
+
+            return (
+                rect1.top < rect2.bottom &&
+                rect1.bottom > rect2.top &&
+                rect1.left < rect2.right &&
+                rect1.right > rect2.left
+            );
+        }
+
+        function endGame() {
+            gameOver = true;
+            gameOverScreen.style.display = "block";
+        }
+
+        function resetGame() {
+            gameOver = false;
+            gameOverScreen.style.display = "none";
+            carX = window.innerWidth / 2 - car.offsetWidth / 2;
+            carY = window.innerHeight - car.offsetHeight;
+            car.style.top = carY + "px";
+            car.style.left = carX + "px";
+
+            for (var i = 0; i < obstacles.length; i++) {
+                var obstacle = obstacles[i];
+                obstacle.style.display = "none";
+                obstacle.style.top = "-50px";
+                obstacle.style.left = getRandomNumber(0, containerWidth - obstacle.offsetWidth) + "px";
+            }
+        }
+
+        for (var i = 0; i < maxObstacles; i++) {
+            createObstacle();
+        }
+
+        setInterval(moveObstacles, 16);
+        setInterval(spawnObstacle, 2000);
+
+        document.addEventListener("keydown", function(event) {
+            if (gameOver && event.keyCode === 32) {
+                resetGame();
+            } else if (!gameOver) {
+                var key = event.key.toLowerCase();
+                var step = 30;
+// keys to move
+                if (key === "w" && carY > 0) {
+                    carY -= step;
+                } else if (key === "s" && carY < containerHeight - car.offsetHeight) {
+                    carY += step;
+                } else if (key === "a" && carX > 0) {
+                    carX -= step;
+                } else if (key === "d" && carX < containerWidth - car.offsetWidth) {
+                    carX += step;
+                }
+
+                car.style.top = carY + "px";
+                car.style.left = carX + "px";
+            }
+        });
+    </script>
+</body>
+</html>
